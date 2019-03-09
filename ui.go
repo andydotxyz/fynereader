@@ -1,27 +1,44 @@
 package fynereader
 
 import (
-	"fmt"
 	"log"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
-
-	"github.com/mmcdole/gofeed"
 )
 
 type reader struct {
-	feedList, itemList *widget.Box
-	itemGroup          *widget.Group
-	itemContent        *widget.Label
-	itemLink           *widget.Hyperlink
+	feedList    *widget.Radio
+	itemList    *widget.Box
+	itemGroup   *widget.Group
+	itemContent *widget.Label
+	itemLink    *widget.Hyperlink
+
+	feeds   []*Feed
+	current *Feed
+}
+
+func (r *reader) add(feedURL string) {
+	feed, err := newFeed(feedURL)
+
+	if err != nil {
+		log.Println("Unable to load feed!")
+		return
+	}
+
+	r.feeds = append(r.feeds, feed)
+	r.feedList.Options = append(r.feedList.Options, feed.Title)
+	r.feedList.Selected = feed.Title
+	r.current = feed
+	widget.Refresh(r.feedList)
+
+	r.load(feedURL)
 }
 
 func (r *reader) load(feedURL string) {
-	fp := gofeed.NewParser()
-	feed, err := fp.ParseURL(feedURL)
+	feed, err := newFeed(feedURL)
 
 	if err != nil {
 		log.Println("Unable to load feed!")
@@ -36,28 +53,44 @@ func (r *reader) load(feedURL string) {
 		item := feed.Items[i] // keep a reference to the slices
 		r.itemList.Append(widget.NewButton(item.Title, func() {
 			r.itemContent.SetText(item.Description)
-			r.itemLink.SetURLFromString(fmt.Sprintf("%s#about", item.Link))
+			r.itemLink.SetURLFromString(item.Link)
 		}))
 	}
+}
+
+func (r *reader) remove(feed *Feed) {
+	// TODO
+	log.Println("TODO remove from the UI and feed list")
 }
 
 // Show loads the main reader window for the specified app context
 func Show(app fyne.App) {
 	read := &reader{}
-	read.feedList = widget.NewVBox(widget.NewButton("All Feeds", func() {}))
+	read.feedList = widget.NewRadio([]string{"All Feeds"}, func(title string) {
+		read.current = nil
+		for _, item := range read.feeds {
+			if item.Title == title {
+				read.current = item
+				read.load(item.Link)
+			}
+		}
+	})
 	read.itemList = widget.NewVBox()
 
 	w := app.NewWindow("FyneReader")
 	feeds := widget.NewGroup("Feeds", read.feedList)
 	tools := widget.NewToolbar(
-		widget.NewToolbarAction(theme.ContentAddIcon(), func() {}),
-		widget.NewToolbarAction(theme.ContentRemoveIcon(), func() {}),
+		widget.NewToolbarAction(theme.ContentAddIcon(), func() {
+			read.inputNewFeed(w)
+		}),
+		widget.NewToolbarAction(theme.ContentRemoveIcon(), func() {
+			read.confirmRemove(read.current, w)
+		}),
 		widget.NewToolbarSpacer(),
 		widget.NewToolbarAction(theme.ViewRefreshIcon(), func() {}))
 	feedPanel := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, tools, nil, nil),
 		feeds, tools)
 
-	defaultURL := "http://fyne.io/feed.xml"
 	read.itemGroup = widget.NewGroupWithScroller("Items", read.itemList)
 	read.itemContent = widget.NewLabel("TODO add content here")
 
@@ -70,10 +103,7 @@ func Show(app fyne.App) {
 		layout.NewBorderLayout(nil, nil, feedPanel, nil),
 		feedPanel, body))
 
-	feeds.Append(widget.NewButton("Fyne", func() {
-		read.load(defaultURL)
-	}))
-	go read.load(defaultURL)
+	go read.add("http://fyne.io/feed.xml")
 
 	w.Resize(fyne.NewSize(1024, 576))
 	w.Show()
