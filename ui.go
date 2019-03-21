@@ -52,7 +52,7 @@ func (r *reader) load(feedURL string) {
 	for i := range feed.Items {
 		item := feed.Items[i] // keep a reference to the slices
 		r.itemList.Append(widget.NewButton(item.Title, func() {
-			r.itemContent.SetText(item.Description)
+			r.itemContent.SetText(textWrap(item.Description))
 			r.itemLink.SetURLFromString(item.Link)
 		}))
 	}

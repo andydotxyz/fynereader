@@ -26,7 +26,11 @@ func newFeed(href string) (*Feed, error) {
 
 	ret := &Feed{Title: resp.Title, Link: href}
 	for _, item := range resp.Items {
-		retItem := &FeedItem{item.Title, item.Description,
+		content := item.Content
+		if content == "" {
+			content = item.Description
+		}
+		retItem := &FeedItem{item.Title, content,
 			fmt.Sprintf("%s#about", item.Link)}
 
 		ret.Items = append(ret.Items, retItem)
