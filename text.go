@@ -1,6 +1,8 @@
 package fynereader
 
-import "strings"
+import (
+	"strings"
+)
 
 func textWrap(in string) string {
 	wrapChars := 120
@@ -35,4 +37,35 @@ func textWrap(in string) string {
 	}
 
 	return out + in[off:]
+}
+
+func removeWhitespace(in string) string {
+	in = strings.ReplaceAll(in, "\n", " ")
+	return in
+}
+
+func stripTags(in string) string {
+	if len(in) < 3 || in[0] != '<' {
+		return in
+	}
+
+	ret := ""
+	tagStart := strings.Index(in, "<")
+	for tagStart > -1 {
+		if tagStart > 0 {
+			ret += removeWhitespace(in[:tagStart])
+		}
+		tagEnd := tagStart + 1 + strings.Index(in[tagStart+1:], ">")
+		tag := in[tagStart+1 : tagEnd]
+		if tag == "/p" || tag == "/h1" || tag == "/h2" || tag == "/h3" || tag == "/h4" || tag == "/h5" || tag == "/h6" {
+			ret += "\n\n"
+		}
+		if tag == "br" || tag == "br/" || tag == "/ul" || tag == "/ol" || tag == "/li" {
+			ret += "\n"
+		}
+
+		in = in[tagEnd+1:]
+		tagStart = strings.Index(in, "<")
+	}
+	return ret + removeWhitespace(in)
 }
