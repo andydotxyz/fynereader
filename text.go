@@ -59,9 +59,12 @@ func stripTags(in string) string {
 		tag := in[tagStart+1 : tagEnd]
 		if tag == "/p" || tag == "/h1" || tag == "/h2" || tag == "/h3" || tag == "/h4" || tag == "/h5" || tag == "/h6" {
 			ret += "\n\n"
-		}
-		if tag == "br" || tag == "br/" || tag == "/ul" || tag == "/ol" || tag == "/li" {
+		} else if tag == "br" || tag == "br/" || tag == "/ul" || tag == "/ol" || tag == "/li" {
 			ret += "\n"
+		} else if tag == "li" {
+			ret += "* "
+		} else if tag == "hr" || tag == "hr/" {
+			ret += "\n---\n"
 		}
 
 		in = in[tagEnd+1:]

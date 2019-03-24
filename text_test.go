@@ -81,3 +81,17 @@ func TestStripTags_NewBreak(t *testing.T) {
 
 	assert.Equal(t, "One New\nLine\n\n", stripped)
 }
+
+func TestStripTags_UL(t *testing.T) {
+	in := "<ul><li>Item</li><li>Item</li></ul>"
+	stripped := stripTags(in)
+
+	assert.Equal(t, "* Item\n* Item\n\n", stripped)
+}
+
+func TestStripTags_HR(t *testing.T) {
+	in := "<span>Before</span><hr/><span>After</span>"
+	stripped := stripTags(in)
+
+	assert.Equal(t, "Before\n---\nAfter", stripped)
+}
